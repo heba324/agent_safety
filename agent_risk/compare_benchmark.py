@@ -17,6 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="rules-only,openai-compatible",
         help="Comma-separated modes: rules-only,openai-compatible.",
     )
+    parser.add_argument("--output", help="Optional path to write the JSON report.")
     return parser
 
 
@@ -36,13 +37,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             raise SystemExit(f"Unsupported mode: {mode}")
 
-    print(
-        json.dumps(
-            {"manifest": str(manifest_path), "results": results},
-            ensure_ascii=False,
-            indent=2,
-        )
-    )
+    payload = {"manifest": str(manifest_path), "results": results}
+    output_text = json.dumps(payload, ensure_ascii=False, indent=2)
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(output_text + "\n", encoding="utf-8")
+    print(output_text)
     return 0
 
 
