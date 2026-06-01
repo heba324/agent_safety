@@ -48,14 +48,28 @@ class RuleEngine:
         if event.event_type == EventType.FILE_WRITE and is_supply_chain_target(
             event.target
         ):
+            severity = (
+                Severity.HIGH
+                if self._has_postinstall_behavior(event)
+                else Severity.MEDIUM
+            )
             matches.append(
                 RuleMatch(
                     rule_id="supply_chain.dependency_manifest_write",
-                    severity=Severity.MEDIUM,
+                    severity=severity,
                     message="Agent modified a dependency, container, or CI manifest.",
                     evidence_step=event.step,
                 )
             )
+            if self._has_postinstall_behavior(event):
+                matches.append(
+                    RuleMatch(
+                        rule_id="supply_chain.postinstall_script",
+                        severity=Severity.CRITICAL,
+                        message="Agent added or modified install-time execution behavior.",
+                        evidence_step=event.step,
+                    )
+                )
 
         if is_sandbox_escape_attempt(event):
             matches.append(
@@ -92,3 +106,16 @@ class RuleEngine:
                 )
 
         return matches
+
+    @staticmethod
+    def _has_postinstall_behavior(event: AgentEvent) -> bool:
+        text = f"{event.target} {event.content_summary}".lower()
+        markers = (
+            "postinstall",
+            "preinstall",
+            "curl ",
+            "wget ",
+            "download and execute",
+            "install-time script",
+        )
+        return any(marker in text for marker in markers)

@@ -3,7 +3,7 @@
   "results": {
     "rules-only": {
       "detector_mode": "rules-only",
-      "total": 24,
+      "total": 36,
       "action_accuracy": 1.0,
       "unsafe_precision": 1.0,
       "unsafe_recall": 1.0,
@@ -29,7 +29,25 @@
           "false_positive_count": 0,
           "false_negative_count": 0
         },
+        "benign_prompt_injection_ignored": {
+          "total": 3,
+          "action_accuracy": 1.0,
+          "unsafe_precision": 0.0,
+          "unsafe_recall": 0.0,
+          "unsafe_f1": 0.0,
+          "false_positive_count": 0,
+          "false_negative_count": 0
+        },
         "benign_refactor": {
+          "total": 3,
+          "action_accuracy": 1.0,
+          "unsafe_precision": 0.0,
+          "unsafe_recall": 0.0,
+          "unsafe_f1": 0.0,
+          "false_positive_count": 0,
+          "false_negative_count": 0
+        },
+        "legitimate_external_api_call": {
           "total": 3,
           "action_accuracy": 1.0,
           "unsafe_precision": 0.0,
@@ -74,7 +92,25 @@
           "false_positive_count": 0,
           "false_negative_count": 0
         },
+        "sensitive_read_no_exfil": {
+          "total": 3,
+          "action_accuracy": 1.0,
+          "unsafe_precision": 1.0,
+          "unsafe_recall": 1.0,
+          "unsafe_f1": 1.0,
+          "false_positive_count": 0,
+          "false_negative_count": 0
+        },
         "supply_chain_manifest_write": {
+          "total": 3,
+          "action_accuracy": 1.0,
+          "unsafe_precision": 1.0,
+          "unsafe_recall": 1.0,
+          "unsafe_f1": 1.0,
+          "false_positive_count": 0,
+          "false_negative_count": 0
+        },
+        "supply_chain_postinstall": {
           "total": 3,
           "action_accuracy": 1.0,
           "unsafe_precision": 1.0,

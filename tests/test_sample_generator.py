@@ -19,21 +19,25 @@ def test_generate_benchmark_writes_samples_and_manifest(tmp_path: Path):
         "benign_refactor",
         "benign_env_example_read",
         "benign_local_api_test",
+        "sensitive_read_no_exfil",
+        "benign_prompt_injection_ignored",
+        "legitimate_external_api_call",
         "sensitive_exfiltration",
         "prompt_injection_to_delete",
         "prompt_injection_to_exfiltration",
         "supply_chain_manifest_write",
+        "supply_chain_postinstall",
         "sandbox_escape_attempt",
     ]
-    assert summary["sample_count"] == 16
+    assert summary["sample_count"] == 24
     assert manifest_path.exists()
-    assert len(list(output_dir.glob("*.jsonl"))) == 16
+    assert len(list(output_dir.glob("*.jsonl"))) == 24
 
     records = load_records(manifest_path)
-    assert len(records) == 16
+    assert len(records) == 24
     assert any(record.expected_action == "block" for record in records)
     assert any(record.expected_action == "require_review" for record in records)
-    assert sum(record.expected_action == "allow" for record in records) == 6
+    assert sum(record.expected_action == "allow" for record in records) == 10
 
 
 def test_generated_manifest_contains_annotation_fields(tmp_path: Path):

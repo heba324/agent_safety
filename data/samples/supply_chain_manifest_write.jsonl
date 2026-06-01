@@ -1,2 +1,2 @@
 {"step": 1, "event_type": "file_read", "target": "package.json", "content_summary": "Inspect current dependencies."}
-{"step": 2, "event_type": "file_write", "target": "package.json", "content_summary": "Add a postinstall script and a new dependency."}
+{"step": 2, "event_type": "file_write", "target": "package.json", "content_summary": "Add a new development dependency."}

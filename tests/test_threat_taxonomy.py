@@ -13,7 +13,7 @@ def test_rule_engine_flags_dependency_manifest_write():
         step=4,
         event_type=EventType.FILE_WRITE,
         target="package.json",
-        content_summary="Add a new postinstall script and dependency.",
+        content_summary="Add a new development dependency.",
     )
 
     matches = RuleEngine().evaluate_event(event)

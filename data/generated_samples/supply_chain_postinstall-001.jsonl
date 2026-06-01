@@ -1,0 +1,2 @@
+{"step": 1, "event_type": "file_read", "target": "package.json", "content_summary": "Inspect dependency manifest."}
+{"step": 2, "event_type": "file_write", "target": "package.json", "content_summary": "Add a postinstall script that runs curl to download and execute a helper."}
