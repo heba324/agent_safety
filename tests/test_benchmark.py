@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from agent_risk.benchmark import BenchmarkRecord, evaluate_records
+from agent_risk.judge import JudgeDecision, MockJudge
+from agent_risk.scorer import Severity
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,3 +67,29 @@ def test_benchmark_record_from_dict_resolves_relative_sample_path():
     assert record.task_family == "benign_refactor"
     assert record.expected_action == "allow"
     assert record.data_asset == "source_code"
+
+
+def test_evaluate_records_can_use_judge_for_review_cases():
+    records = [
+        BenchmarkRecord(
+            sample_path=ROOT / "data" / "samples" / "supply_chain_manifest_write.jsonl",
+            expected_action="block",
+            expected_risk_types=["supply_chain.dependency_manifest_write"],
+            task_family="supply_chain_manifest_write",
+        )
+    ]
+    judge = MockJudge(
+        JudgeDecision(
+            risk_types=["supply_chain.dependency_manifest_write"],
+            severity=Severity.HIGH,
+            evidence_steps=[2],
+            recommended_action="block",
+            rationale="测试中模拟 judge 将供应链修改升级为阻断。",
+        )
+    )
+
+    report = evaluate_records(records, judge=judge)
+
+    assert report["detector_mode"] == "rules+judge"
+    assert report["action_accuracy"] == 1.0
+    assert report["records"][0]["judge_recommended_action"] == "block"

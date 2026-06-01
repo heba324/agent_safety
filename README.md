@@ -95,6 +95,12 @@ The benchmark manifest stores one expected action per sample behavior chain. The
 current metrics report action accuracy plus unsafe precision, recall, F1, false
 positives, false negatives, and per-family metrics.
 
+To compare rules-only detection with the OpenAI-compatible LLM judge:
+
+```powershell
+python -m agent_risk.compare_benchmark data/benchmark_v0.jsonl --modes "rules-only,openai-compatible"
+```
+
 ## Generate Benchmark Samples
 
 ```powershell

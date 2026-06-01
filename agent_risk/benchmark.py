@@ -4,7 +4,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List, Sequence
 
+from agent_risk.cascade import CascadeDetector
 from agent_risk.detector import BehaviorChainDetector
+from agent_risk.judge import LLMJudge, OpenAICompatibleJudge
 
 
 @dataclass(frozen=True)
@@ -46,8 +48,8 @@ def load_records(manifest_path: Path) -> List[BenchmarkRecord]:
     return records
 
 
-def evaluate_records(records: Iterable[BenchmarkRecord]) -> dict:
-    detector = BehaviorChainDetector()
+def evaluate_records(records: Iterable[BenchmarkRecord], judge: LLMJudge | None = None) -> dict:
+    detector = CascadeDetector(judge=judge) if judge is not None else BehaviorChainDetector()
     rows = []
 
     for record in records:
@@ -66,6 +68,11 @@ def evaluate_records(records: Iterable[BenchmarkRecord]) -> dict:
                 "predicted_action": report.recommended_action,
                 "expected_risk_types": record.expected_risk_types,
                 "predicted_risk_types": predicted_risk_types,
+                "judge_recommended_action": (
+                    report.judge_decision.recommended_action
+                    if report.judge_decision is not None
+                    else None
+                ),
                 "evidence_steps": record.evidence_steps,
                 "attack_source": record.attack_source,
                 "trust_boundary": record.trust_boundary,
@@ -73,7 +80,9 @@ def evaluate_records(records: Iterable[BenchmarkRecord]) -> dict:
             }
         )
 
-    return _summarize(rows)
+    summary = _summarize(rows)
+    summary["detector_mode"] = "rules+judge" if judge is not None else "rules-only"
+    return summary
 
 
 def _summarize(rows: List[dict]) -> dict:
@@ -169,14 +178,32 @@ def build_parser() -> argparse.ArgumentParser:
         description="Evaluate the detector against a JSONL benchmark manifest.",
     )
     parser.add_argument("manifest", help="Path to a benchmark JSONL manifest.")
+    parser.add_argument(
+        "--judge",
+        choices=("rules-only", "openai-compatible"),
+        default="rules-only",
+        help="Optional LLM judge backend for review cases.",
+    )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    report = evaluate_records(load_records(Path(args.manifest)))
+    report = evaluate_records(
+        load_records(Path(args.manifest)),
+        judge=_build_judge(args.judge),
+    )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["false_negative_count"] == 0 else 1
+
+
+def _build_judge(judge_mode: str):
+    if judge_mode == "openai-compatible":
+        from agent_risk.config import load_env_file
+
+        load_env_file()
+        return OpenAICompatibleJudge.from_env()
+    return None
 
 
 if __name__ == "__main__":
