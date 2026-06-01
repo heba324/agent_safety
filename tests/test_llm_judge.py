@@ -112,3 +112,42 @@ def test_openai_compatible_judge_parses_chat_completion_response(monkeypatch):
     assert captured["url"] == "https://api.example/v1/chat/completions"
     assert captured["headers"]["Authorization"] == "Bearer test-key"
     assert captured["payload"]["model"] == "Qwen/Qwen3-8B"
+
+
+def test_openai_compatible_judge_retries_transient_transport_error():
+    calls = {"count": 0}
+
+    def flaky_transport(url, headers, payload, timeout):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise TimeoutError("temporary timeout")
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(
+                            {
+                                "risk_types": [],
+                                "severity": "low",
+                                "evidence_steps": [],
+                                "recommended_action": "allow",
+                                "rationale": "重试后成功。",
+                            }
+                        )
+                    }
+                }
+            ]
+        }
+
+    judge = OpenAICompatibleJudge(
+        api_key="test-key",
+        base_url="https://api.example/v1",
+        model="Qwen/Qwen3-8B",
+        transport=flaky_transport,
+        max_retries=2,
+    )
+
+    decision = judge.review([], BehaviorChainDetector().detect_events([]))
+
+    assert calls["count"] == 2
+    assert decision.recommended_action == "allow"

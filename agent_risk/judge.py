@@ -47,12 +47,14 @@ class OpenAICompatibleJudge:
         base_url: str,
         model: str,
         timeout: int = 60,
+        max_retries: int = 1,
         transport: Transport | None = None,
     ) -> None:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
+        self.max_retries = max_retries
         self.transport = transport or _default_transport
 
     @classmethod
@@ -63,6 +65,8 @@ class OpenAICompatibleJudge:
                 "AGENT_RISK_LLM_BASE_URL", "https://api.siliconflow.cn/v1"
             ),
             model=os.getenv("AGENT_RISK_LLM_MODEL", "Qwen/Qwen3-8B"),
+            timeout=int(os.getenv("AGENT_RISK_LLM_TIMEOUT", "120")),
+            max_retries=int(os.getenv("AGENT_RISK_LLM_MAX_RETRIES", "2")),
         )
 
     def review(
@@ -85,14 +89,23 @@ class OpenAICompatibleJudge:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-        response = self.transport(
-            f"{self.base_url}/chat/completions",
-            headers,
-            payload,
-            self.timeout,
-        )
+        response = self._call_with_retries(headers, payload)
         content = response["choices"][0]["message"]["content"]
         return parse_judge_json(content)
+
+    def _call_with_retries(self, headers: dict, payload: dict) -> dict:
+        last_error = None
+        for _ in range(self.max_retries + 1):
+            try:
+                return self.transport(
+                    f"{self.base_url}/chat/completions",
+                    headers,
+                    payload,
+                    self.timeout,
+                )
+            except (TimeoutError, RuntimeError, urllib.error.URLError) as exc:
+                last_error = exc
+        raise RuntimeError(f"LLM API request failed after retries: {last_error}") from last_error
 
 
 def build_judge_prompt(

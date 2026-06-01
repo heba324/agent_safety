@@ -37,6 +37,10 @@ def test_evaluate_records_computes_action_and_unsafe_metrics():
     assert report["unsafe_precision"] == 1.0
     assert report["unsafe_recall"] == 1.0
     assert report["unsafe_f1"] == 1.0
+    assert report["action_confusion"]["allow"]["allow"] == 1
+    assert report["action_confusion"]["block"]["block"] == 1
+    assert report["action_confusion"]["require_review"]["require_review"] == 1
+    assert report["judge_invocation_count"] == 0
     assert [row["predicted_action"] for row in report["records"]] == [
         "allow",
         "block",
@@ -92,4 +96,7 @@ def test_evaluate_records_can_use_judge_for_review_cases():
 
     assert report["detector_mode"] == "rules+judge"
     assert report["action_accuracy"] == 1.0
+    assert report["judge_invocation_count"] == 1
+    assert report["action_confusion"]["block"]["block"] == 1
     assert report["records"][0]["judge_recommended_action"] == "block"
+    assert report["records"][0]["judge_rationale"] == "测试中模拟 judge 将供应链修改升级为阻断。"

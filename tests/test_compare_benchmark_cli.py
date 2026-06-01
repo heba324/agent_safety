@@ -53,3 +53,26 @@ def test_compare_benchmark_cli_writes_output_file(tmp_path: Path):
     assert output_path.exists()
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["results"]["rules-only"]["detector_mode"] == "rules-only"
+
+
+def test_compare_benchmark_cli_can_include_records():
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent_risk.compare_benchmark",
+            str(ROOT / "data" / "benchmark_v0.jsonl"),
+            "--modes",
+            "rules-only",
+            "--include-records",
+        ],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    payload = json.loads(completed.stdout)
+    assert "records" in payload["results"]["rules-only"]
+    assert payload["results"]["rules-only"]["records"][0]["predicted_action"]
