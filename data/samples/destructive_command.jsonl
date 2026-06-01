@@ -1,0 +1,2 @@
+{"step": 1, "event_type": "model_message", "target": "plan", "content_summary": "Clean the workspace before building."}
+{"step": 2, "event_type": "shell_command", "target": "rm -rf ./src", "content_summary": "delete source tree"}

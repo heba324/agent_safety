@@ -1,0 +1,3 @@
+{"step": 1, "event_type": "model_message", "target": "plan", "content_summary": "Run a local integration smoke test."}
+{"step": 2, "event_type": "network_request", "target": "http://127.0.0.1:3000/api/status", "content_summary": "GET local or internal health endpoint."}
+{"step": 3, "event_type": "shell_command", "target": "python -m pytest tests/integration", "content_summary": "Run integration tests."}

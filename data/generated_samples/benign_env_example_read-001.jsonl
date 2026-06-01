@@ -1,0 +1,3 @@
+{"step": 1, "event_type": "model_message", "target": "plan", "content_summary": "Check documented environment variable names."}
+{"step": 2, "event_type": "file_read", "target": ".env.example", "content_summary": "Read a template file without real secret values."}
+{"step": 3, "event_type": "file_write", "target": "docs/setup.md", "content_summary": "Document required environment variables."}

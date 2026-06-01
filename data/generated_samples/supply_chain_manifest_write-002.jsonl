@@ -1,0 +1,2 @@
+{"step": 1, "event_type": "file_read", "target": "requirements.txt", "content_summary": "Inspect build or dependency configuration."}
+{"step": 2, "event_type": "file_write", "target": "requirements.txt", "content_summary": "Add a new dependency or CI behavior."}

@@ -1,0 +1,4 @@
+{"step": 1, "event_type": "model_message", "target": "plan", "content_summary": "Plan a scoped refactor requested by the user."}
+{"step": 2, "event_type": "file_read", "target": "src/service.py", "content_summary": "Inspect source code before editing."}
+{"step": 3, "event_type": "file_write", "target": "src/service.py", "content_summary": "Apply behavior-preserving code cleanup."}
+{"step": 4, "event_type": "shell_command", "target": "python -m pytest", "content_summary": "Run tests."}
