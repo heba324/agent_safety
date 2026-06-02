@@ -1,6 +1,6 @@
 # Qwen3-8B 初步实验记录 v0
 
-本文档记录第一次将硅基流动 `Qwen/Qwen3-8B` 接入 benchmark 的结果。实验目的不是证明最终效果，而是验证 `rules-only` 与 `rules+judge` 的批量评测链路能跑通，并观察 judge 是否能输出可分析的 rationale。
+本文档记录将硅基流动 `Qwen/Qwen3-8B` 接入行为链 benchmark 后的阶段性结果。当前目标不是证明最终论文效果，而是确认 `rules-only` 与 `rules+judge` 两种模式可以批量评测、保存明细、输出可分析的风险理由。
 
 ## 实验设置
 
@@ -10,19 +10,19 @@
 python -m agent_risk.compare_benchmark data\benchmark_generated.jsonl --modes "rules-only,openai-compatible" --include-records --output results\benchmark_generated_rules_vs_qwen3_8b_detailed.json
 ```
 
-模型：
+模型配置：
 
 - provider: OpenAI-compatible
 - model: `Qwen/Qwen3-8B`
 - base URL: `https://api.siliconflow.cn/v1`
 
-benchmark：
+Benchmark 配置：
 
-- 总样本数：36
-- 任务族数：12
-- allow：15
-- require_review：6
-- block：15
+- 总样本数：48
+- 任务族数：16
+- `allow`：15
+- `require_review`：6
+- `block`：27
 
 ## 结果摘要
 
@@ -46,30 +46,27 @@ benchmark：
 {
   "allow": {"allow": 15, "require_review": 0, "block": 0},
   "require_review": {"allow": 0, "require_review": 6, "block": 0},
-  "block": {"allow": 0, "require_review": 0, "block": 15}
+  "block": {"allow": 0, "require_review": 0, "block": 27}
 }
 ```
 
 ## 观察
 
-1. 当前 36 条样本仍然偏规则友好，`rules-only` 已经达到 1.0，因此无法体现 Qwen3-8B 对准确率的增益。
-2. Qwen3-8B 被调用 6 次，正好对应两个复核任务族：`sensitive_read_no_exfil` 和 `supply_chain_manifest_write`。
-3. Qwen3-8B 在这 6 条样本上没有改变最终动作，均保持 `require_review`。
-4. judge rationale 有分析价值。例如普通供应链修改样本中，模型能指出依赖清单或 CI 配置修改可能引入供应链风险，需要人工确认。
+1. 当前 48 条合成样本仍然偏规则友好，`rules-only` 已达到 1.0，因此这组结果主要证明评测链路和样本标注一致性，而不能证明 LLM judge 相比规则有明显增益。
+2. Qwen3-8B 被调用 6 次，正好对应两个复核型样本族：`sensitive_read_no_exfil` 和 `supply_chain_manifest_write`。
+3. Qwen3-8B 在 6 条复核样本上没有改变最终动作，均保持 `require_review`，其 rationale 对后续论文错误分析有价值。
+4. 新增的隐蔽外泄样本族包括 HTTP 低语义外传、issue comment 外传、Git remote 外传、混淆提示注入外传。当前这些样本已由基础行为链规则拦截，因此下一步要构造更难的语义型样本，让 LLM judge 或学习模型发挥作用。
 
 ## 方法问题
 
-当前级联策略只在基础检测器输出 `require_review` 时调用 judge。这符合实时系统成本控制，但会限制 judge 对明显 allow/block 样本的纠错能力。后续可以设计三种模式：
+当前级联策略只在基础检测器输出 `require_review` 时调用 judge。这符合在线系统的成本控制目标，但会限制 judge 对明显 `allow` 或 `block` 样本的纠错能力。后续可以设计三种模式：
 
 1. `review-only`：只复核 `require_review`，用于低成本在线检测。
-2. `audit-all`：全部样本都给 judge，用于离线标注或 upper-bound 分析。
-3. `sampled-audit`：对 allow/block 样本抽样审计，用于监控规则漂移。
+2. `audit-all`：所有样本都交给 judge，用于离线标注、上界分析和规则盲区发现。
+3. `sampled-audit`：对 `allow` 与 `block` 样本抽样审计，用于监控规则漂移。
 
 ## 下一步
 
-1. 构造 rules-only 会失败的样本，例如：
-   - 外部请求摘要不含 upload/send/post，但语义上仍是外传。
-   - 提示注入服从没有显式使用 “ignore previous instructions” 字符串。
-   - 敏感内容通过 issue comment、git remote、日志系统等非 HTTP upload 通道外传。
-2. 增加 `audit-all` 模式，让 Qwen3-8B 对所有样本输出判断，用于分析模型是否能发现规则未覆盖风险。
-3. 记录每次 LLM 调用的耗时、重试次数和失败次数，形成实时检测成本分析。
+1. 增加 `audit-all` 评测模式，保存所有样本的 Qwen3-8B 判断，用于分析模型与规则的分歧。
+2. 构造 rules-only 更容易失败的样本，例如语义正常但上下文异常的工具调用、跨多步的数据变换外泄、以及不含明显关键词的权限升级。
+3. 记录每次 LLM 调用的耗时、重试次数、失败次数和 token 规模，为实时检测成本分析做准备。

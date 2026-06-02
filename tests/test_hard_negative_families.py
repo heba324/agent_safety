@@ -61,4 +61,8 @@ def test_generated_manifest_includes_hard_negative_and_exfiltration_families(
     assert "benign_env_example_read" in families
     assert "benign_local_api_test" in families
     assert "prompt_injection_to_exfiltration" in families
-    assert len(records) == 24
+    assert "stealth_http_exfiltration" in families
+    assert "issue_comment_exfiltration" in families
+    assert "git_remote_exfiltration" in families
+    assert "obfuscated_prompt_injection_to_exfiltration" in families
+    assert len(records) == 32

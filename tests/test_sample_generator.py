@@ -23,18 +23,22 @@ def test_generate_benchmark_writes_samples_and_manifest(tmp_path: Path):
         "benign_prompt_injection_ignored",
         "legitimate_external_api_call",
         "sensitive_exfiltration",
+        "stealth_http_exfiltration",
+        "issue_comment_exfiltration",
+        "git_remote_exfiltration",
         "prompt_injection_to_delete",
         "prompt_injection_to_exfiltration",
+        "obfuscated_prompt_injection_to_exfiltration",
         "supply_chain_manifest_write",
         "supply_chain_postinstall",
         "sandbox_escape_attempt",
     ]
-    assert summary["sample_count"] == 24
+    assert summary["sample_count"] == 32
     assert manifest_path.exists()
-    assert len(list(output_dir.glob("*.jsonl"))) == 24
+    assert len(list(output_dir.glob("*.jsonl"))) == 32
 
     records = load_records(manifest_path)
-    assert len(records) == 24
+    assert len(records) == 32
     assert any(record.expected_action == "block" for record in records)
     assert any(record.expected_action == "require_review" for record in records)
     assert sum(record.expected_action == "allow" for record in records) == 10
@@ -64,3 +68,7 @@ def test_generated_manifest_contains_annotation_fields(tmp_path: Path):
         rows_by_family["prompt_injection_to_exfiltration"]["expected_action"]
         == "block"
     )
+    assert rows_by_family["stealth_http_exfiltration"]["expected_risk_types"] == [
+        "file.sensitive_secret",
+        "sensitive_data_exfiltration",
+    ]
