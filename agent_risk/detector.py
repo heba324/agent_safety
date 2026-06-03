@@ -13,6 +13,7 @@ class DetectionReport:
     findings: List[RuleMatch] = field(default_factory=list)
     recommended_action: str = "allow"
     judge_decision: object = None
+    base_recommended_action: str | None = None
 
     def to_dict(self) -> dict:
         payload = {
@@ -33,6 +34,8 @@ class DetectionReport:
             ],
             "recommended_action": self.recommended_action,
         }
+        if self.base_recommended_action is not None:
+            payload["base_recommended_action"] = self.base_recommended_action
         if self.judge_decision is not None:
             payload["judge_decision"] = {
                 "risk_types": self.judge_decision.risk_types,

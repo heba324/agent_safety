@@ -70,3 +70,13 @@ Benchmark 配置：
 1. 增加 `audit-all` 评测模式，保存所有样本的 Qwen3-8B 判断，用于分析模型与规则的分歧。
 2. 构造 rules-only 更容易失败的样本，例如语义正常但上下文异常的工具调用、跨多步的数据变换外泄、以及不含明显关键词的权限升级。
 3. 记录每次 LLM 调用的耗时、重试次数、失败次数和 token 规模，为实时检测成本分析做准备。
+
+## 2026-06-03 更新
+
+已新增 `audit-all` 评测模式。后续可以使用如下命令运行全量 LLM 审计：
+
+```powershell
+python -m agent_risk.compare_benchmark data\benchmark_generated.jsonl --modes "rules-only,audit-all" --include-records --output results\benchmark_generated_audit_all_detailed.json
+```
+
+该模式会对当前 48 条样本产生 48 次 LLM 调用，适合作为离线分析，不适合作为默认实时检测路径。

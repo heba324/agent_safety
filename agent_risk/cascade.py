@@ -30,4 +30,30 @@ class CascadeDetector:
             findings=base_report.findings,
             recommended_action=decision.recommended_action,
             judge_decision=decision,
+            base_recommended_action=base_report.recommended_action,
+        )
+
+
+class AuditAllDetector:
+    def __init__(self, judge: LLMJudge) -> None:
+        self._base_detector = BehaviorChainDetector()
+        self._judge = judge
+
+    def detect_jsonl(self, payload: str) -> DetectionReport:
+        events = [
+            AgentEvent.from_dict(json.loads(line))
+            for line in payload.splitlines()
+            if line.strip()
+        ]
+        return self.detect_events(events)
+
+    def detect_events(self, events: List[AgentEvent]) -> DetectionReport:
+        base_report = self._base_detector.detect_events(events)
+        decision = self._judge.review(events, base_report)
+        return DetectionReport(
+            overall=base_report.overall,
+            findings=base_report.findings,
+            recommended_action=decision.recommended_action,
+            judge_decision=decision,
+            base_recommended_action=base_report.recommended_action,
         )

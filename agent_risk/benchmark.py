@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List, Sequence
 
-from agent_risk.cascade import CascadeDetector
+from agent_risk.cascade import AuditAllDetector, CascadeDetector
 from agent_risk.detector import BehaviorChainDetector
 from agent_risk.judge import LLMJudge, OpenAICompatibleJudge
 
@@ -48,8 +48,12 @@ def load_records(manifest_path: Path) -> List[BenchmarkRecord]:
     return records
 
 
-def evaluate_records(records: Iterable[BenchmarkRecord], judge: LLMJudge | None = None) -> dict:
-    detector = CascadeDetector(judge=judge) if judge is not None else BehaviorChainDetector()
+def evaluate_records(
+    records: Iterable[BenchmarkRecord],
+    judge: LLMJudge | None = None,
+    judge_mode: str = "review-only",
+) -> dict:
+    detector = _build_detector(judge=judge, judge_mode=judge_mode)
     rows = []
 
     for record in records:
@@ -65,6 +69,11 @@ def evaluate_records(records: Iterable[BenchmarkRecord], judge: LLMJudge | None 
                 "sample_path": str(record.sample_path),
                 "task_family": record.task_family,
                 "expected_action": record.expected_action,
+                "base_predicted_action": (
+                    report.base_recommended_action
+                    if report.base_recommended_action is not None
+                    else report.recommended_action
+                ),
                 "predicted_action": report.recommended_action,
                 "expected_risk_types": record.expected_risk_types,
                 "predicted_risk_types": predicted_risk_types,
@@ -86,8 +95,26 @@ def evaluate_records(records: Iterable[BenchmarkRecord], judge: LLMJudge | None 
         )
 
     summary = _summarize(rows)
-    summary["detector_mode"] = "rules+judge" if judge is not None else "rules-only"
+    summary["detector_mode"] = _detector_mode_name(judge, judge_mode)
     return summary
+
+
+def _build_detector(judge: LLMJudge | None, judge_mode: str):
+    if judge is None:
+        return BehaviorChainDetector()
+    if judge_mode == "review-only":
+        return CascadeDetector(judge=judge)
+    if judge_mode == "audit-all":
+        return AuditAllDetector(judge=judge)
+    raise ValueError(f"Unsupported judge_mode: {judge_mode}")
+
+
+def _detector_mode_name(judge: LLMJudge | None, judge_mode: str) -> str:
+    if judge is None:
+        return "rules-only"
+    if judge_mode == "audit-all":
+        return "rules+judge-audit-all"
+    return "rules+judge"
 
 
 def _summarize(rows: List[dict]) -> dict:
@@ -127,6 +154,7 @@ def _summarize(rows: List[dict]) -> dict:
             1 for row in rows if row.get("judge_recommended_action") is not None
         ),
         "action_confusion": _action_confusion(rows),
+        "base_action_confusion": _base_action_confusion(rows),
         "family_metrics": _family_metrics(rows),
         "records": rows,
     }
@@ -152,6 +180,20 @@ def _action_confusion(rows: List[dict]) -> dict:
         if predicted not in matrix[expected]:
             matrix[expected][predicted] = 0
         matrix[expected][predicted] += 1
+    return matrix
+
+
+def _base_action_confusion(rows: List[dict]) -> dict:
+    actions = ("allow", "require_review", "block")
+    matrix = {base: {predicted: 0 for predicted in actions} for base in actions}
+    for row in rows:
+        base = row.get("base_predicted_action", row["predicted_action"])
+        predicted = row["predicted_action"]
+        if base not in matrix:
+            matrix[base] = {action: 0 for action in actions}
+        if predicted not in matrix[base]:
+            matrix[base][predicted] = 0
+        matrix[base][predicted] += 1
     return matrix
 
 
@@ -199,6 +241,7 @@ def _summarize_without_family(rows: List[dict]) -> dict:
             1 for row in rows if row.get("judge_recommended_action") is not None
         ),
         "action_confusion": _action_confusion(rows),
+        "base_action_confusion": _base_action_confusion(rows),
     }
 
 

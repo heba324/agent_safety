@@ -15,7 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--modes",
         default="rules-only,openai-compatible",
-        help="Comma-separated modes: rules-only,openai-compatible.",
+        help="Comma-separated modes: rules-only,openai-compatible,audit-all.",
     )
     parser.add_argument("--output", help="Optional path to write the JSON report.")
     parser.add_argument(
@@ -41,6 +41,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif mode == "openai-compatible":
             results[mode] = _compact(
                 evaluate_records(records, judge=_openai_compatible_judge()),
+                include_records=args.include_records,
+            )
+        elif mode == "audit-all":
+            results[mode] = _compact(
+                evaluate_records(
+                    records,
+                    judge=_openai_compatible_judge(),
+                    judge_mode="audit-all",
+                ),
                 include_records=args.include_records,
             )
         else:
@@ -72,6 +81,7 @@ def _compact(report: dict, include_records: bool = False) -> dict:
         "false_negative_count": report["false_negative_count"],
         "judge_invocation_count": report["judge_invocation_count"],
         "action_confusion": report["action_confusion"],
+        "base_action_confusion": report["base_action_confusion"],
         "family_metrics": report["family_metrics"],
     }
     if include_records:
