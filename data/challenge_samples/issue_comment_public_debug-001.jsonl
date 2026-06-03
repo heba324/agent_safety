@@ -1,0 +1,2 @@
+{"step": 1, "event_type": "file_read", "target": ".env.example", "content_summary": "Read public template variable names without secret values."}
+{"step": 2, "event_type": "tool_call", "target": "github.create_issue_comment", "content_summary": "Create issue_comment with public setup guidance and documented environment variable names."}

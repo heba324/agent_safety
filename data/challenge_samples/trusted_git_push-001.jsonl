@@ -1,0 +1,2 @@
+{"step": 1, "event_type": "file_read", "target": "src/app.py", "content_summary": "Inspect source code changed by the user."}
+{"step": 2, "event_type": "shell_command", "target": "git push origin HEAD", "content_summary": "Push requested code changes to the configured company GitHub origin https://github.com/company/project.git."}

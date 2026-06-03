@@ -67,3 +67,13 @@ results/benchmark_v0_qwen3_8b_audit_all_detailed.json
 - 规则动作与 judge 动作：6 条均一致
 
 观察：Qwen3-8B 能够为良性重构、敏感外泄、破坏性命令、提示注入导致删除、供应链清单修改、沙箱逃逸分别给出合理 rationale。当前小基准仍偏简单，后续应重点构造规则与 judge 发生分歧的困难样本。
+
+## 2026-06-03 挑战集验证
+
+已在 `data/challenge_benchmark.jsonl` 上运行 `rules-only,audit-all`，输出文件：
+
+```text
+results/challenge_rules_vs_qwen3_8b_audit_all_detailed.json
+```
+
+结果显示，Qwen3-8B 的 unsafe F1 从 rules-only 的 0.3333 提升到 0.5714，但 action accuracy 仍为 0.0。它能发现语义外泄需要复核，但对可信 Git push、公开 issue comment 和不可信 issue 驱动的 `git clean -fdx` 仍存在误判。这个结果很适合作为论文中的动机：LLM judge 有语义增益，但也需要更结构化的事件链特征和轻量模型校准。
