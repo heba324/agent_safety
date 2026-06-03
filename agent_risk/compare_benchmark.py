@@ -15,7 +15,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--modes",
         default="rules-only,openai-compatible",
-        help="Comma-separated modes: rules-only,openai-compatible,audit-all.",
+        help=(
+            "Comma-separated modes: rules-only,openai-compatible,audit-all,"
+            "semantic-baseline."
+        ),
     )
     parser.add_argument("--output", help="Optional path to write the JSON report.")
     parser.add_argument(
@@ -50,6 +53,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                     judge=_openai_compatible_judge(),
                     judge_mode="audit-all",
                 ),
+                include_records=args.include_records,
+            )
+        elif mode == "semantic-baseline":
+            from agent_risk.semantic_baseline import evaluate_semantic_baseline
+
+            results[mode] = _compact(
+                evaluate_semantic_baseline(records),
                 include_records=args.include_records,
             )
         else:

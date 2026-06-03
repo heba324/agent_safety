@@ -116,3 +116,22 @@ def test_compare_benchmark_main_supports_audit_all_mode(monkeypatch, capsys):
     assert payload["results"]["audit-all"]["detector_mode"] == "rules+judge-audit-all"
     assert payload["results"]["audit-all"]["judge_invocation_count"] == 6
     assert judge.calls == 6
+
+
+def test_compare_benchmark_main_supports_semantic_baseline(capsys):
+    from agent_risk import compare_benchmark
+
+    exit_code = compare_benchmark.main(
+        [
+            str(ROOT / "data" / "challenge_benchmark.jsonl"),
+            "--modes",
+            "semantic-baseline",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["results"]["semantic-baseline"]["detector_mode"] == (
+        "semantic-feature-baseline"
+    )
+    assert payload["results"]["semantic-baseline"]["action_accuracy"] == 1.0
